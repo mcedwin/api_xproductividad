@@ -18,18 +18,10 @@ class AuthController extends Controller
             'password' => 'required|string',
         ]);
 
-        $account = DB::table('auth_accounts')
-            ->where('provider', 'password')
-            ->where('provider_id', $request->email)
-            ->first();
+        $user = Usuario::where('email', $request->email)->first();
 
-        if (! $account || ! Hash::check($request->password, $account->password_hash)) {
+        if (! $user || ! $user->password_hash || ! Hash::check($request->password, $user->password_hash)) {
             return response()->json(['error' => 'Credenciales inválidas'], 401);
-        }
-
-        $user = Usuario::find($account->user_id);
-        if (! $user) {
-            return response()->json(['error' => 'Usuario no encontrado'], 404);
         }
 
         $token = $user->createToken('mobile')->plainTextToken;
@@ -115,8 +107,8 @@ class AuthController extends Controller
     public function register(Request $request): JsonResponse
     {
         $request->validate([
-            'nombre' => 'required|string|max:255',
-            'email' => 'required|email|unique:usuarios,email',
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:app_users,email',
             'password' => 'required|min:6',
         ]);
 
@@ -126,19 +118,12 @@ class AuthController extends Controller
             $now = gmdate('Y-m-d H:i:s');
             $user = Usuario::create([
                 'uuid' => (string) \Illuminate\Support\Str::uuid(),
-                'nombre' => $request->nombre,
+                'nombre' => $request->name,
                 'email' => $request->email,
+                'password_hash' => Hash::make($request->password),
                 'created_at' => $now,
                 'updated_at' => $now,
                 'sync_status' => 'synced',
-            ]);
-
-            DB::table('auth_accounts')->insert([
-                'user_id' => $user->id,
-                'provider' => 'password',
-                'provider_id' => $request->email,
-                'password_hash' => Hash::make($request->password),
-                'created_at' => now(),
             ]);
 
             DB::commit();

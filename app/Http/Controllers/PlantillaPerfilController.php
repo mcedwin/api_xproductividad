@@ -12,15 +12,15 @@ class PlantillaPerfilController extends Controller
         $plantillas = PlantillaPerfil::with('tareasPlantilla')->get()->map(function ($p) {
             return [
                 'id' => $p->id,
-                'nombre' => $p->nombre,
-                'descripcion' => $p->descripcion,
-                'codigo_punto_icono' => $p->codigo_punto_icono,
-                'valor_color' => $p->valor_color,
-                'tareas' => $p->tareasPlantilla->map(function ($t) {
+                'name' => $p->nombre,
+                'description' => $p->descripcion,
+                'iconCodePoint' => $p->codigo_punto_icono,
+                'colorValue' => $p->valor_color,
+                'tasks' => $p->tareasPlantilla->map(function ($t) {
                     return [
-                        'titulo' => $t->titulo,
-                        'periodicidad' => $t->periodicidad,
-                        'dias_semana' => $t->dias_semana,
+                        'title' => $t->titulo,
+                        'periodicity' => $t->periodicidad,
+                        'days_of_week' => $t->dias_semana,
                     ];
                 }),
             ];
@@ -35,15 +35,15 @@ class PlantillaPerfilController extends Controller
 
         $plantilla = [
             'id' => $p->id,
-            'nombre' => $p->nombre,
-            'descripcion' => $p->descripcion,
-            'codigo_punto_icono' => $p->codigo_punto_icono,
-            'valor_color' => $p->valor_color,
-            'tareas' => $p->tareasPlantilla->map(function ($t) {
+            'name' => $p->nombre,
+            'description' => $p->descripcion,
+            'iconCodePoint' => $p->codigo_punto_icono,
+            'colorValue' => $p->valor_color,
+            'tasks' => $p->tareasPlantilla->map(function ($t) {
                 return [
-                    'titulo' => $t->titulo,
-                    'periodicidad' => $t->periodicidad,
-                    'dias_semana' => $t->dias_semana,
+                    'title' => $t->titulo,
+                    'periodicity' => $t->periodicidad,
+                    'days_of_week' => $t->dias_semana,
                 ];
             }),
         ];
@@ -55,14 +55,14 @@ class PlantillaPerfilController extends Controller
     {
         $plantilla = PlantillaPerfil::findOrFail($id);
 
-        $tareas = TareaPlantilla::where('plantilla_id', $plantilla->id)
+        $tareas = TareaPlantilla::where('template_id', $plantilla->id)
             ->orderBy('orden')
             ->get()
             ->map(function ($t) {
                 return [
-                    'titulo' => $t->titulo,
-                    'periodicidad' => $t->periodicidad,
-                    'dias_semana' => $t->dias_semana,
+                    'title' => $t->titulo,
+                    'periodicity' => $t->periodicidad,
+                    'days_of_week' => $t->dias_semana,
                 ];
             });
 

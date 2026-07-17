@@ -14,23 +14,23 @@ class CompletacioneController extends Controller
         $user = $request->user();
         $since = $request->query('since');
 
-        $query = Completacione::where('usuario_id', $user->id)
+        $query = Completacione::where('user_id', $user->id)
             ->whereNull('deleted_at');
 
         if ($since) {
             $query->where('updated_at', '>', $since);
         }
 
-        if ($request->has('fecha')) {
-            $query->whereDate('fecha_completada', $request->fecha);
+        if ($request->has('date')) {
+            $query->whereDate('fecha_completada', $request->date);
         }
 
-        if ($request->has('desde')) {
-            $query->whereDate('fecha_completada', '>=', $request->desde);
+        if ($request->has('from')) {
+            $query->whereDate('fecha_completada', '>=', $request->from);
         }
 
-        if ($request->has('hasta')) {
-            $query->whereDate('fecha_completada', '<=', $request->hasta);
+        if ($request->has('to')) {
+            $query->whereDate('fecha_completada', '<=', $request->to);
         }
 
         $completaciones = $query->orderBy('updated_at', 'asc')
@@ -38,7 +38,7 @@ class CompletacioneController extends Controller
             ->get()
             ->map(function ($c) {
                 if ($c->tarea) {
-                    $c->tarea_id = $c->tarea->uuid;
+                    $c->task_id = $c->tarea->uuid;
                 }
                 unset($c->tarea);
                 return $c;
@@ -51,8 +51,8 @@ class CompletacioneController extends Controller
     {
         $validated = $request->validate([
             'id' => 'required|string|max:36',
-            'tarea_id' => 'required|string',
-            'fecha_completada' => 'sometimes|date',
+            'task_id' => 'required|string',
+            'completed_date' => 'sometimes|date',
             'device_id' => 'sometimes|string|max:36|nullable',
         ]);
 
@@ -60,15 +60,15 @@ class CompletacioneController extends Controller
         $now = gmdate('Y-m-d H:i:s');
         $user = $request->user();
 
-        $tarea = Tarea::where('usuario_id', $user->id)
-            ->where('uuid', $validated['tarea_id'])
+        $tarea = Tarea::where('user_id', $user->id)
+            ->where('uuid', $validated['task_id'])
             ->firstOrFail();
 
-        $fecha = $validated['fecha_completada'] ?? today()->toDateString();
+        $fecha = $validated['completed_date'] ?? today()->toDateString();
 
         $existing = Completacione::withoutGlobalScopes()
-            ->where('usuario_id', $user->id)
-            ->where('tarea_id', $tarea->id)
+            ->where('user_id', $user->id)
+            ->where('task_id', $tarea->id)
             ->where('fecha_completada', $fecha)
             ->first();
 
@@ -87,8 +87,8 @@ class CompletacioneController extends Controller
         try {
             $completacion = Completacione::create([
                 'uuid' => $uuid,
-                'usuario_id' => $user->id,
-                'tarea_id' => $tarea->id,
+                'user_id' => $user->id,
+                'task_id' => $tarea->id,
                 'fecha_completada' => $fecha,
                 'created_at' => $now,
                 'updated_at' => $now,
@@ -99,8 +99,8 @@ class CompletacioneController extends Controller
             return response()->json(['data' => $completacion], 201);
         } catch (\Throwable $e) {
             $existing = Completacione::withoutGlobalScopes()
-                ->where('usuario_id', $user->id)
-                ->where('tarea_id', $tarea->id)
+                ->where('user_id', $user->id)
+                ->where('task_id', $tarea->id)
                 ->where('fecha_completada', $fecha)
                 ->first();
 
@@ -125,7 +125,7 @@ class CompletacioneController extends Controller
         $user = request()->user();
 
         $completacion = Completacione::where('uuid', $uuid)
-            ->where('usuario_id', $user->id)
+            ->where('user_id', $user->id)
             ->first();
 
         if (! $completacion) {
@@ -145,31 +145,30 @@ class CompletacioneController extends Controller
     public function toggle(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'tarea_id' => 'required|string',
-            'fecha_completada' => 'sometimes|date',
+            'task_id' => 'required|string',
+            'completed_date' => 'sometimes|date',
             'updated_at' => 'sometimes|string|nullable',
         ]);
 
         $user = $request->user();
-        $fecha = $validated['fecha_completada'] ?? today()->toDateString();
+        $fecha = $validated['completed_date'] ?? today()->toDateString();
         $clientUpdatedAt = $validated['updated_at'] ?? null;
         $now = gmdate('Y-m-d H:i:s');
 
-        $tarea = Tarea::where('usuario_id', $user->id)
-            ->where('uuid', $validated['tarea_id'])
+        $tarea = Tarea::where('user_id', $user->id)
+            ->where('uuid', $validated['task_id'])
             ->firstOrFail();
 
         $completacion = Completacione::withoutGlobalScopes()
-            ->where('usuario_id', $user->id)
-            ->where('tarea_id', $tarea->id)
+            ->where('user_id', $user->id)
+            ->where('task_id', $tarea->id)
             ->where('fecha_completada', $fecha)
             ->first();
 
         if ($completacion) {
-            // Last-write-wins: conservar el estado del servidor si es más reciente.
             if ($clientUpdatedAt !== null && $clientUpdatedAt < $completacion->updated_at) {
                 return response()->json([
-                    'completada' => $completacion->deleted_at === null,
+                    'completed' => $completacion->deleted_at === null,
                     'data' => $completacion,
                 ], 200);
             }
@@ -183,7 +182,7 @@ class CompletacioneController extends Controller
                     'sync_status' => 'synced',
                 ]);
 
-                return response()->json(['completada' => false], 200);
+                return response()->json(['completed' => false], 200);
             }
 
             $completacion->update([
@@ -192,45 +191,19 @@ class CompletacioneController extends Controller
                 'sync_status' => 'synced',
             ]);
 
-            return response()->json(['completada' => true], 200);
+            return response()->json(['completed' => true], 200);
         }
 
         Completacione::create([
             'uuid' => (string) \Illuminate\Support\Str::uuid(),
-            'usuario_id' => $user->id,
-            'tarea_id' => $tarea->id,
+            'user_id' => $user->id,
+            'task_id' => $tarea->id,
             'fecha_completada' => $fecha,
             'created_at' => $now,
             'updated_at' => $clientUpdatedAt ?? $now,
             'sync_status' => 'synced',
         ]);
 
-        return response()->json(['completada' => true], 200);
-    }
-
-    public function hoy(): JsonResponse
-    {
-        $user = request()->user();
-        $fecha = today()->toDateString();
-
-        $completadas = Completacione::where('usuario_id', $user->id)
-            ->whereDate('fecha_completada', $fecha)
-            ->whereNull('deleted_at')
-            ->pluck('tarea_id');
-
-        $tareas = Tarea::where('usuario_id', $user->id)
-            ->where('activo', true)
-            ->whereNull('deleted_at')
-            ->get()
-            ->map(function ($tarea) use ($completadas) {
-                $tarea->completada_hoy = $completadas->contains($tarea->id);
-
-                return $tarea;
-            });
-
-        return response()->json([
-            'fecha' => $fecha,
-            'tareas' => $tareas,
-        ]);
+        return response()->json(['completed' => true], 200);
     }
 }

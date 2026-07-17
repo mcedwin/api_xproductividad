@@ -6,14 +6,14 @@ use Illuminate\Database\Eloquent\Model;
 
 class TareaPlantilla extends Model
 {
-    protected $table = 'tareas_plantilla';
+    protected $table = 'app_template_tasks';
 
     protected $primaryKey = 'id';
 
     public $incrementing = true;
 
     protected $fillable = [
-        'plantilla_id',
+        'template_id',
         'titulo',
         'periodicidad',
         'dias_semana',
@@ -28,6 +28,6 @@ class TareaPlantilla extends Model
 
     public function plantillaPerfil()
     {
-        return $this->belongsTo(PlantillaPerfil::class, 'plantilla_id', 'id');
+        return $this->belongsTo(PlantillaPerfil::class, 'template_id', 'id');
     }
 }

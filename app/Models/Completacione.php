@@ -9,14 +9,14 @@ class Completacione extends Model
 {
     use Syncable;
 
-    protected $table = 'completaciones';
+    protected $table = 'app_completions';
 
     public $timestamps = false;
 
     protected $fillable = [
         'uuid',
-        'usuario_id',
-        'tarea_id',
+        'user_id',
+        'task_id',
         'fecha_completada',
         'created_at',
         'updated_at',
@@ -31,12 +31,12 @@ class Completacione extends Model
 
     public function usuario()
     {
-        return $this->belongsTo(Usuario::class, 'usuario_id', 'id');
+        return $this->belongsTo(Usuario::class, 'user_id', 'id');
     }
 
     public function tarea()
     {
-        return $this->belongsTo(Tarea::class, 'tarea_id', 'id');
+        return $this->belongsTo(Tarea::class, 'task_id', 'id');
     }
 
     public function scopeActive($query)

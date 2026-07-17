@@ -10,7 +10,7 @@ class Usuario extends Authenticatable
 {
     use HasApiTokens, Syncable;
 
-    protected $table = 'usuarios';
+    protected $table = 'app_users';
 
     public $timestamps = false;
 
@@ -20,7 +20,8 @@ class Usuario extends Authenticatable
         'nombre',
         'email',
         'avatar',
-        'tipo_perfil',
+        'password_hash',
+        'profile_template_id',
         'created_at',
         'updated_at',
         'deleted_at',
@@ -42,17 +43,17 @@ class Usuario extends Authenticatable
 
     public function tareas()
     {
-        return $this->hasMany(Tarea::class, 'usuario_id', 'id');
+        return $this->hasMany(Tarea::class, 'user_id', 'id');
     }
 
     public function completaciones()
     {
-        return $this->hasMany(Completacione::class, 'usuario_id', 'id');
+        return $this->hasMany(Completacione::class, 'user_id', 'id');
     }
 
     public function plantillaPerfil()
     {
-        return $this->belongsTo(PlantillaPerfil::class, 'tipo_perfil', 'id');
+        return $this->belongsTo(PlantillaPerfil::class, 'profile_template_id', 'id');
     }
 
     public function scopeActive($query)

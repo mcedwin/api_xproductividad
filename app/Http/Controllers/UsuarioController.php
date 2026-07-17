@@ -13,11 +13,11 @@ class UsuarioController extends Controller
     public function aplicarPlantilla(Request $request): JsonResponse
     {
         $request->validate([
-            'plantilla_id' => 'required|string|exists:plantillas_perfil,id',
+            'template_id' => 'required|string|exists:app_profile_templates,id',
         ]);
 
         $user = $request->user();
-        $tareasPlantilla = TareaPlantilla::where('plantilla_id', $request->plantilla_id)
+        $tareasPlantilla = TareaPlantilla::where('template_id', $request->template_id)
             ->orderBy('orden')
             ->get();
 
@@ -26,7 +26,7 @@ class UsuarioController extends Controller
         $tareasPlantilla->each(function ($tp) use ($user, $now) {
             Tarea::create([
                 'uuid' => (string) Str::uuid(),
-                'usuario_id' => $user->id,
+                'user_id' => $user->id,
                 'titulo' => $tp->titulo,
                 'periodicidad' => $tp->periodicidad,
                 'dias_semana' => $tp->dias_semana,
@@ -37,8 +37,8 @@ class UsuarioController extends Controller
             ]);
         });
 
-        if ($user->tipo_perfil !== $request->plantilla_id) {
-            $user->update(['tipo_perfil' => $request->plantilla_id]);
+        if ($user->profile_template_id !== $request->template_id) {
+            $user->update(['profile_template_id' => $request->template_id]);
         }
 
         return response()->json(['message' => 'Plantilla aplicada correctamente']);
@@ -51,7 +51,7 @@ class UsuarioController extends Controller
             'nombre' => 'sometimes|string|max:255',
             'email' => 'sometimes|email',
             'avatar' => 'sometimes|string|nullable',
-            'tipo_perfil' => 'sometimes|string|nullable',
+            'profile_template_id' => 'sometimes|string|nullable',
             'device_id' => 'sometimes|string|max:36|nullable',
         ]);
 
@@ -66,7 +66,7 @@ class UsuarioController extends Controller
                 'nombre' => $validated['nombre'] ?? null,
                 'email' => $validated['email'] ?? null,
                 'avatar' => $validated['avatar'] ?? null,
-                'tipo_perfil' => $validated['tipo_perfil'] ?? null,
+                'profile_template_id' => $validated['profile_template_id'] ?? null,
                 'updated_at' => $now,
                 'sync_status' => 'synced',
                 'device_id' => $validated['device_id'] ?? null,
@@ -80,7 +80,7 @@ class UsuarioController extends Controller
             'nombre' => $validated['nombre'] ?? $user->nombre,
             'email' => $validated['email'] ?? $user->email,
             'avatar' => $validated['avatar'] ?? null,
-            'tipo_perfil' => $validated['tipo_perfil'] ?? null,
+            'profile_template_id' => $validated['profile_template_id'] ?? null,
             'created_at' => $now,
             'updated_at' => $now,
             'sync_status' => 'synced',

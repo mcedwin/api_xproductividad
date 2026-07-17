@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class PlantillaPerfil extends Model
 {
-    protected $table = 'plantillas_perfil';
+    protected $table = 'app_profile_templates';
 
     protected $primaryKey = 'id';
 
@@ -24,6 +24,6 @@ class PlantillaPerfil extends Model
 
     public function tareasPlantilla()
     {
-        return $this->hasMany(TareaPlantilla::class, 'plantilla_id', 'id');
+        return $this->hasMany(TareaPlantilla::class, 'template_id', 'id');
     }
 }

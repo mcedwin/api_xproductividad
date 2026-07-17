@@ -4,10 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Completacione;
 use App\Models\Tarea;
-use App\Models\TareaPlantilla;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 class TareaController extends Controller
 {
@@ -16,19 +14,19 @@ class TareaController extends Controller
         $user = $request->user();
         $since = $request->query('since');
 
-        $query = Tarea::where('usuario_id', $user->id)
+        $query = Tarea::where('user_id', $user->id)
             ->whereNull('deleted_at');
 
         if ($since) {
             $query->where('updated_at', '>', $since);
         }
 
-        if ($request->has('activo')) {
-            $query->where('activo', $request->boolean('activo'));
+        if ($request->has('active')) {
+            $query->where('activo', $request->boolean('active'));
         }
 
-        if ($request->has('periodicidad')) {
-            $query->where('periodicidad', $request->periodicidad);
+        if ($request->has('periodicity')) {
+            $query->where('periodicidad', $request->periodicity);
         }
 
         if ($request->boolean('with_today')) {
@@ -44,15 +42,15 @@ class TareaController extends Controller
     {
         $validated = $request->validate([
             'id' => 'required|string|max:36',
-            'titulo' => 'required|string|max:255',
-            'periodicidad' => 'sometimes|in:daily,weekly,custom,fixed,monthly',
-            'dias_semana' => 'sometimes|array|nullable',
-            'dias_semana.*' => 'integer|between:1,7',
-            'dia_mes' => 'sometimes|integer|between:1,31|nullable',
-            'fecha_fija' => 'sometimes|date|nullable',
-            'hora' => 'sometimes|string|nullable|date_format:H:i',
-            'prioridad' => 'sometimes|in:none,medium,high',
-            'activo' => 'sometimes|boolean',
+            'title' => 'required|string|max:255',
+            'periodicity' => 'sometimes|in:daily,weekly,custom,fixed,monthly',
+            'days_of_week' => 'sometimes|array|nullable',
+            'days_of_week.*' => 'integer|between:1,7',
+            'day_of_month' => 'sometimes|integer|between:1,31|nullable',
+            'fixed_date' => 'sometimes|date|nullable',
+            'time' => 'sometimes|string|nullable|date_format:H:i',
+            'priority' => 'sometimes|in:none,medium,high',
+            'active' => 'sometimes|boolean',
             'device_id' => 'sometimes|string|max:36|nullable',
             'updated_at' => 'sometimes|string|nullable',
         ]);
@@ -63,24 +61,23 @@ class TareaController extends Controller
         $user = $request->user();
 
         $existing = Tarea::where('uuid', $uuid)
-            ->where('usuario_id', $user->id)
+            ->where('user_id', $user->id)
             ->first();
 
         if ($existing) {
-            // Last-write-wins: si el servidor tiene una versión más reciente, la conserva.
             if ($clientUpdatedAt !== null && $clientUpdatedAt < $existing->updated_at) {
                 return response()->json(['data' => $existing]);
             }
 
             $existing->update([
-                'titulo' => $validated['titulo'] ?? $existing->titulo,
-                'periodicidad' => $validated['periodicidad'] ?? $existing->periodicidad,
-                'dias_semana' => $validated['dias_semana'] ?? $existing->dias_semana,
-                'dia_mes' => array_key_exists('dia_mes', $validated) ? $validated['dia_mes'] : $existing->dia_mes,
-                'fecha_fija' => $validated['fecha_fija'] ?? $existing->fecha_fija,
-                'hora' => $validated['hora'] ?? $existing->hora,
-                'prioridad' => $validated['prioridad'] ?? $existing->prioridad,
-                'activo' => $validated['activo'] ?? $existing->activo,
+                'titulo' => $validated['title'] ?? $existing->titulo,
+                'periodicidad' => $validated['periodicity'] ?? $existing->periodicidad,
+                'dias_semana' => $validated['days_of_week'] ?? $existing->dias_semana,
+                'dia_mes' => array_key_exists('day_of_month', $validated) ? $validated['day_of_month'] : $existing->dia_mes,
+                'fecha_fija' => $validated['fixed_date'] ?? $existing->fecha_fija,
+                'hora' => $validated['time'] ?? $existing->hora,
+                'prioridad' => $validated['priority'] ?? $existing->prioridad,
+                'activo' => $validated['active'] ?? $existing->activo,
                 'updated_at' => $clientUpdatedAt ?? $now,
                 'sync_status' => 'synced',
                 'device_id' => $validated['device_id'] ?? $existing->device_id,
@@ -91,14 +88,14 @@ class TareaController extends Controller
 
         $tarea = Tarea::create([
             'uuid' => $uuid,
-            'usuario_id' => $user->id,
-            'titulo' => $validated['titulo'],
-            'periodicidad' => $validated['periodicidad'] ?? 'daily',
-            'dias_semana' => $validated['dias_semana'] ?? null,
-            'dia_mes' => $validated['dia_mes'] ?? null,
-            'fecha_fija' => $validated['fecha_fija'] ?? null,
-            'hora' => $validated['hora'] ?? null,
-            'prioridad' => $validated['prioridad'] ?? 'none',
+            'user_id' => $user->id,
+            'titulo' => $validated['title'],
+            'periodicidad' => $validated['periodicity'] ?? 'daily',
+            'dias_semana' => $validated['days_of_week'] ?? null,
+            'dia_mes' => $validated['day_of_month'] ?? null,
+            'fecha_fija' => $validated['fixed_date'] ?? null,
+            'hora' => $validated['time'] ?? null,
+            'prioridad' => $validated['priority'] ?? 'none',
             'created_at' => $now,
             'updated_at' => $clientUpdatedAt ?? $now,
             'sync_status' => 'synced',
@@ -112,7 +109,7 @@ class TareaController extends Controller
     {
         $user = request()->user();
         $tarea = Tarea::where('uuid', $uuid)
-            ->where('usuario_id', $user->id)
+            ->where('user_id', $user->id)
             ->first();
 
         if (! $tarea) {
@@ -121,7 +118,7 @@ class TareaController extends Controller
 
         $now = gmdate('Y-m-d H:i:s');
 
-        Completacione::where('tarea_id', $tarea->id)
+        Completacione::where('task_id', $tarea->id)
             ->whereNull('deleted_at')
             ->update([
                 'deleted_at' => $now,
@@ -136,39 +133,5 @@ class TareaController extends Controller
         ]);
 
         return response()->json(null, 204);
-    }
-
-    public function copiarDePlantilla(Request $request): JsonResponse
-    {
-        $request->validate([
-            'plantilla_id' => 'required|string|exists:plantillas_perfil,id',
-        ]);
-
-        $user = $request->user();
-        $tareasPlantilla = TareaPlantilla::where('plantilla_id', $request->plantilla_id)
-            ->orderBy('orden')
-            ->get();
-
-        $now = gmdate('Y-m-d H:i:s');
-        $tareas = $tareasPlantilla->map(function ($tp) use ($user, $now) {
-            return Tarea::create([
-                'uuid' => (string) Str::uuid(),
-                'usuario_id' => $user->id,
-                'titulo' => $tp->titulo,
-                'periodicidad' => $tp->periodicidad,
-                'dias_semana' => $tp->dias_semana,
-                'dia_mes' => $tp->dia_mes ?? null,
-                'prioridad' => $tp->prioridad,
-                'created_at' => $now,
-                'updated_at' => $now,
-                'sync_status' => 'synced',
-            ]);
-        });
-
-        if ($user->tipo_perfil !== $request->plantilla_id) {
-            $user->update(['tipo_perfil' => $request->plantilla_id]);
-        }
-
-        return response()->json(['data' => $tareas], 201);
     }
 }

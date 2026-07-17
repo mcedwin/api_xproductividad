@@ -9,13 +9,13 @@ class Tarea extends Model
 {
     use Syncable;
 
-    protected $table = 'tareas';
+    protected $table = 'app_tasks';
 
     public $timestamps = false;
 
     protected $fillable = [
         'uuid',
-        'usuario_id',
+        'user_id',
         'titulo',
         'periodicidad',
         'dias_semana',
@@ -44,17 +44,17 @@ class Tarea extends Model
 
     public function usuario()
     {
-        return $this->belongsTo(Usuario::class, 'usuario_id', 'id');
+        return $this->belongsTo(Usuario::class, 'user_id', 'id');
     }
 
     public function completaciones()
     {
-        return $this->hasMany(Completacione::class, 'tarea_id', 'id');
+        return $this->hasMany(Completacione::class, 'task_id', 'id');
     }
 
     public function completadaHoy()
     {
-        return $this->hasOne(Completacione::class, 'tarea_id', 'id')
+        return $this->hasOne(Completacione::class, 'task_id', 'id')
             ->whereDate('fecha_completada', today());
     }
 
